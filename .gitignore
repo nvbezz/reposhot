@@ -1,0 +1,11 @@
+node_modules/
+dist/
+build/
+coverage/
+.cache/
+
+*.log
+reposhot-output*.xml
+
+.DS_Store
+Thumbs.db

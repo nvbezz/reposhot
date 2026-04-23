@@ -1,0 +1,25 @@
+{
+  "name": "reposhot",
+  "version": "1.0.0",
+  "description": "CLI that packs a local repository into a single XML file for AI consumption",
+  "main": "dist/index.js",
+  "bin": {
+    "reposhot": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "node --test test/**/*.test.ts"
+  },
+  "keywords": ["cli", "ai", "xml", "repository"],
+  "license": "MIT",
+  "dependencies": {
+    "minimatch": "^10.0.0",
+    "tiktoken": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0"
+  }
+}
