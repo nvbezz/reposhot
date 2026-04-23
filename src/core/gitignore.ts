@@ -20,6 +20,9 @@ export const ALWAYS_IGNORED: string[] = [
   'Thumbs.db',
   '*.log',
   'reposhot-output*.xml',
+  'package-lock.json',
+  'yarn.lock',
+  'pnpm-lock.yaml',
 ];
 
 export function parseIgnoreFile(filePath: string): string[] {
