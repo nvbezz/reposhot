@@ -11,6 +11,8 @@
     "dev": "tsup --watch",
     "test": "tsc -p tsconfig.test.json && node --test .test-dist/test/gitignore.test.js .test-dist/test/walker.test.js .test-dist/test/xmlGenerator.test.js .test-dist/test/packer.test.js .test-dist/test/args.test.js .test-dist/test/reporter.test.js"
   },
+  "files": ["dist"],
+  "engines": { "node": ">=18" },
   "keywords": ["cli", "ai", "xml", "repository"],
   "license": "MIT",
   "dependencies": {
