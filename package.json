@@ -1,6 +1,6 @@
 {
   "name": "reposhot",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "CLI that packs a local repository into a single XML file for AI consumption",
   "main": "dist/index.js",
   "bin": {
