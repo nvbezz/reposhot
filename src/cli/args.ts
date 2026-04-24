@@ -3,7 +3,7 @@ import * as path from 'path';
 import { parseArgs as nodeParseArgs } from 'util';
 import { ReposhotConfig } from '../types';
 
-const VERSION = '1.1.0';
+const VERSION = '1.1.1';
 
 const HELP = `
 reposhot — pack a repository into a single XML file for AI consumption

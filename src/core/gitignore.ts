@@ -31,7 +31,7 @@ export function parseIgnoreFile(filePath: string): string[] {
     return content
       .split('\n')
       .map((line) => line.trim())
-      .filter((line) => line.length > 0 && !line.startsWith('#'));
+      .filter((line) => line.length > 0 && !line.startsWith('#') && !line.startsWith('!'));
   } catch {
     return [];
   }
