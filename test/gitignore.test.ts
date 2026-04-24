@@ -38,6 +38,13 @@ test('parseIgnoreFile: trims whitespace from lines', () => {
   cleanup(tmp);
 });
 
+test('parseIgnoreFile: skips negation patterns to avoid minimatch misinterpretation', () => {
+  const tmp = makeTmp();
+  fs.writeFileSync(path.join(tmp, '.gitignore'), '.vscode/*\n!.vscode/extensions.json\ndist/\n');
+  assert.deepEqual(parseIgnoreFile(path.join(tmp, '.gitignore')), ['.vscode/*', 'dist/']);
+  cleanup(tmp);
+});
+
 // --- loadIgnorePatterns ---
 
 test('loadIgnorePatterns: merges .gitignore and .reposhotignore', () => {
