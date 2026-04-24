@@ -15,6 +15,13 @@ export function walkDirectory(config: ReposhotConfig): WalkResult {
   const included: string[] = [];
   let skipped = 0;
 
+  let rootReal: string;
+  try {
+    rootReal = fs.realpathSync(config.rootDir);
+  } catch {
+    rootReal = config.rootDir;
+  }
+
   function walk(dir: string): void {
     let entries: fs.Dirent[];
     try {
@@ -30,6 +37,31 @@ export function walkDirectory(config: ReposhotConfig): WalkResult {
 
       if (isIgnored(relPath, entry.name, ignorePatterns)) {
         if (entry.isFile()) skipped++;
+        continue;
+      }
+
+      if (entry.isSymbolicLink()) {
+        try {
+          const real = fs.realpathSync(absPath);
+          const rootRealNorm = rootReal.endsWith(path.sep) ? rootReal : rootReal + path.sep;
+          if (!real.startsWith(rootRealNorm) && real !== rootReal) {
+            skipped++;
+            continue;
+          }
+          const stat = fs.statSync(absPath);
+          if (stat.isDirectory()) {
+            walk(absPath);
+          } else if (stat.isFile()) {
+            if (!isReadable(absPath)) { skipped++; }
+            else if (!isSizeOk(absPath)) { skipped++; }
+            else if (config.include.length > 0 && !matchesPattern(relPath, config.include)) { skipped++; }
+            else { included.push(absPath); }
+          } else {
+            skipped++;
+          }
+        } catch {
+          skipped++;
+        }
         continue;
       }
 
