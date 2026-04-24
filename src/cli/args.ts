@@ -3,7 +3,7 @@ import * as path from 'path';
 import { parseArgs as nodeParseArgs } from 'util';
 import { ReposhotConfig } from '../types';
 
-const VERSION = '1.0.0';
+const VERSION = '1.1.0';
 
 const HELP = `
 reposhot — pack a repository into a single XML file for AI consumption
@@ -18,6 +18,7 @@ Options:
       --no-gitignore        Disable .gitignore / .reposhotignore processing
       --line-numbers        Add line numbers to file content
       --remove-comments     Strip comments from source files
+      --check-secrets       Warn if potential secrets are detected in files
   -v, --version             Show version
   -h, --help                Show this help message
 `.trim();
@@ -29,6 +30,7 @@ interface ConfigFile {
   respectGitignore?: boolean;
   showLineNumbers?: boolean;
   removeComments?: boolean;
+  checkSecrets?: boolean;
 }
 
 const DEFAULTS: Omit<ReposhotConfig, 'rootDir'> = {
@@ -38,6 +40,7 @@ const DEFAULTS: Omit<ReposhotConfig, 'rootDir'> = {
   respectGitignore: true,
   showLineNumbers: false,
   removeComments: false,
+  checkSecrets: false,
 };
 
 export function parseArgs(argv: string[], cwd: string = process.cwd()): ReposhotConfig {
@@ -50,6 +53,7 @@ export function parseArgs(argv: string[], cwd: string = process.cwd()): Reposhot
       'no-gitignore':    { type: 'boolean' },
       'line-numbers':    { type: 'boolean' },
       'remove-comments': { type: 'boolean' },
+      'check-secrets':   { type: 'boolean' },
       version:           { type: 'boolean', short: 'v' },
       help:              { type: 'boolean', short: 'h' },
     },
@@ -77,6 +81,7 @@ export function parseArgs(argv: string[], cwd: string = process.cwd()): Reposhot
     respectGitignore: values['no-gitignore']           ? false                        : (fileConfig.respectGitignore ?? DEFAULTS.respectGitignore),
     showLineNumbers:  values['line-numbers']           ?? fileConfig.showLineNumbers  ?? DEFAULTS.showLineNumbers,
     removeComments:   values['remove-comments']        ?? fileConfig.removeComments   ?? DEFAULTS.removeComments,
+    checkSecrets:     values['check-secrets']          ?? fileConfig.checkSecrets     ?? DEFAULTS.checkSecrets,
   };
 }
 

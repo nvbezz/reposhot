@@ -6,6 +6,12 @@ export interface ReposhotConfig {
   respectGitignore: boolean;
   showLineNumbers: boolean;
   removeComments: boolean;
+  checkSecrets: boolean;
+}
+
+export interface SecretMatch {
+  relPath: string;
+  findings: string[];
 }
 
 export interface PackResult {

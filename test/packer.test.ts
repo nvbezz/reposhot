@@ -23,6 +23,7 @@ function makeConfig(rootDir: string, overrides: Partial<ReposhotConfig> = {}): R
     respectGitignore: false,
     showLineNumbers: false,
     removeComments: false,
+    checkSecrets: false,
     ...overrides,
   };
 }
@@ -158,5 +159,20 @@ test('runPack: empty directory produces fileCount 0', async () => {
   const tmp = makeTmp();
   const result = await runPack(makeConfig(tmp));
   assert.equal(result.fileCount, 0);
+  cleanup(tmp);
+});
+
+// --- path traversal ---
+
+test('runPack: throws on output path targeting system directory', async () => {
+  const tmp = makeTmp();
+  const systemPath = process.platform === 'win32'
+    ? 'C:\\Windows\\evil.xml'
+    : '/etc/evil.xml';
+  const config = makeConfig(tmp, { output: systemPath });
+  await assert.rejects(
+    () => runPack(config),
+    /system directory/,
+  );
   cleanup(tmp);
 });
