@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { runPack, writeOutput, isBinary } from '../src/core/packer';
+import { runPack, writeOutput, isBinary, countTokens } from '../src/core/packer';
 import { ReposhotConfig } from '../src/types';
 
 function makeTmp(): string {
@@ -174,5 +174,30 @@ test('runPack: throws on output path targeting system directory', async () => {
     () => runPack(config),
     /system directory/,
   );
+  cleanup(tmp);
+});
+
+test('countTokens: does not throw on special token text', async () => {
+  const n = await countTokens(['prompt <|endoftext|> more']);
+  assert.ok(n > 0);
+});
+
+test('countTokens: parallel path matches sequential count', async () => {
+  const small = ['const x = 1;\n'.repeat(10)];
+  const perFile = await countTokens(small);
+  // large enough to cross the worker threshold
+  const many = Array.from({ length: 64 }, () => 'const x = 1;\n'.repeat(4000));
+  const total = await countTokens(many);
+  const expected = (await countTokens(['const x = 1;\n'.repeat(4000)])) * 64;
+  assert.ok(perFile > 0);
+  assert.equal(total, expected);
+});
+
+test('runPack: allows output paths that only share a prefix with system dirs', async () => {
+  const tmp = makeTmp();
+  write(tmp, 'a.ts');
+  const out = path.join(tmp, 'devel', 'out.xml');
+  fs.mkdirSync(path.dirname(out));
+  await assert.doesNotReject(runPack(makeConfig(tmp, { output: out })));
   cleanup(tmp);
 });
