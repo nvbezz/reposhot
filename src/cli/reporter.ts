@@ -1,6 +1,7 @@
 import { PackResult } from '../types';
 
-const VERSION = '1.1.0';
+// keep in sync with package.json when bumping the release
+export const VERSION = '1.2.0';
 
 const tty  = process.stdout.isTTY === true;
 const etty = process.stderr.isTTY === true;

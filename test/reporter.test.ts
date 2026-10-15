@@ -1,6 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { formatSummary, printError } from '../src/cli/reporter';
+import * as fs from 'fs';
+import * as path from 'path';
+import { formatSummary, printError, VERSION } from '../src/cli/reporter';
 import { PackResult } from '../src/types';
 
 function makeResult(overrides: Partial<PackResult> = {}): PackResult {
@@ -79,4 +81,10 @@ test('printError: writes to stderr, not stdout', () => {
 
   assert.equal(stdoutChunks.length, 0);
   assert.ok(stderrChunks.some((c) => c.includes('something went wrong')));
+});
+
+test('VERSION: matches package.json', () => {
+  const pkgPath = path.join(__dirname, '..', '..', 'package.json');
+  const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8')) as { version: string };
+  assert.equal(VERSION, pkg.version);
 });

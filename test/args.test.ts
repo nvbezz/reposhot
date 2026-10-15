@@ -126,13 +126,6 @@ test('loadConfigFile: reads and parses reposhot.config.json', () => {
   cleanup(tmp);
 });
 
-test('loadConfigFile: returns empty object on invalid JSON', () => {
-  const tmp = makeTmp();
-  fs.writeFileSync(path.join(tmp, 'reposhot.config.json'), 'not json {{');
-  assert.deepEqual(loadConfigFile(tmp), {});
-  cleanup(tmp);
-});
-
 // --- config file priority ---
 
 test('parseArgs: config file values are used when no flags', () => {
@@ -185,5 +178,28 @@ test('parseArgs: config file include used when no --include flag', () => {
 test('parseArgs: throws on unknown flag', () => {
   const tmp = makeTmp();
   assert.throws(() => parseArgs(['--unknown-flag'], tmp));
+  cleanup(tmp);
+});
+
+// --- config file validation ---
+
+test('loadConfigFile: throws on malformed JSON', () => {
+  const tmp = makeTmp();
+  fs.writeFileSync(path.join(tmp, 'reposhot.config.json'), '{ include: ');
+  assert.throws(() => loadConfigFile(tmp), /invalid JSON/);
+  cleanup(tmp);
+});
+
+test('loadConfigFile: throws when include is not an array of strings', () => {
+  const tmp = makeTmp();
+  fs.writeFileSync(path.join(tmp, 'reposhot.config.json'), JSON.stringify({ include: 'src/**' }));
+  assert.throws(() => loadConfigFile(tmp), /"include" must be an array of strings/);
+  cleanup(tmp);
+});
+
+test('loadConfigFile: throws when a boolean option has the wrong type', () => {
+  const tmp = makeTmp();
+  fs.writeFileSync(path.join(tmp, 'reposhot.config.json'), JSON.stringify({ checkSecrets: 'yes' }));
+  assert.throws(() => loadConfigFile(tmp), /"checkSecrets" must be a boolean/);
   cleanup(tmp);
 });

@@ -8,7 +8,9 @@ CLI that packs a local repository into a single XML file for AI consumption.
 - **Real token counting** — uses tiktoken `cl100k_base`, same encoder as GPT-4
 - **Deterministic output** — files sorted alphabetically, reproducible snapshots
 - **Respects your ignore rules** — reads `.gitignore` and `.reposhotignore` out of the box
-- **Security aware** — symlink protection, output path validation, and optional secret detection
+- **Fast on large repos** — token counting runs in parallel across CPU cores
+- **Security aware** — symlink protection, `.env.*` files always excluded, output path
+  validation, and optional secret detection
 
 ## Requirements
 
@@ -29,7 +31,7 @@ npx reposhot -i "src/**"            # include only matching files
 npx reposhot --ignore "**/*.test*"  # additional ignore patterns
 npx reposhot --no-gitignore         # skip .gitignore rules
 npx reposhot --line-numbers         # add line numbers
-npx reposhot --remove-comments      # strip comments
+npx reposhot --remove-comments      # strip comments (C-style and #-style languages only)
 npx reposhot --check-secrets        # warn if potential secrets are detected
 npx reposhot --output -             # output to stdout
 ```
@@ -78,6 +80,9 @@ Create `reposhot.config.json` at the root of your project:
 ```
 
 Priority: `CLI flags > reposhot.config.json > defaults`
+
+An invalid config file (malformed JSON or wrong value types) stops the run with an error
+instead of being silently ignored.
 
 ## License
 
