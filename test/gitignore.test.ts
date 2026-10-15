@@ -140,3 +140,9 @@ test('ALWAYS_IGNORED: env variants are ignored but templates are kept', () => {
   assert.equal(matchesPattern('config/.env.production', ALWAYS_IGNORED), true);
   assert.equal(matchesPattern('.env.example', ALWAYS_IGNORED), false);
 });
+
+test('ALWAYS_IGNORED: lockfiles from common ecosystems are ignored', () => {
+  for (const lock of ['Cargo.lock', 'poetry.lock', 'go.sum', 'crates/x/Gemfile.lock']) {
+    assert.equal(matchesPattern(lock, ALWAYS_IGNORED), true, lock);
+  }
+});

@@ -25,6 +25,16 @@ export const ALWAYS_IGNORED: string[] = [
   'package-lock.json',
   'yarn.lock',
   'pnpm-lock.yaml',
+  'bun.lock',
+  'bun.lockb',
+  'Cargo.lock',
+  'Gemfile.lock',
+  'composer.lock',
+  'poetry.lock',
+  'Pipfile.lock',
+  'uv.lock',
+  'go.sum',
+  'pubspec.lock',
 ];
 
 export function parseIgnoreFile(filePath: string): string[] {

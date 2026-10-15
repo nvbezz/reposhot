@@ -54,6 +54,33 @@ test('isBinary: only checks first 8KB', () => {
   assert.equal(isBinary(buf), false);
 });
 
+test('isBinary: detects raw pixel data without null bytes', () => {
+  const buf = Buffer.alloc(4096);
+  for (let i = 0; i < buf.length; i++) buf[i] = 0x80 + ((i * 37) % 0x7f);
+  assert.equal(isBinary(buf), true);
+});
+
+test('isBinary: detects data dominated by control characters', () => {
+  const buf = Buffer.alloc(1000);
+  for (let i = 0; i < buf.length; i++) buf[i] = 1 + (i % 8);
+  assert.equal(isBinary(buf), true);
+});
+
+test('isBinary: accepts UTF-8 text with accents and emoji', () => {
+  assert.equal(isBinary(Buffer.from('const saludo = "¡Hola, señor! 🚀";\n'.repeat(50))), false);
+});
+
+test('isBinary: accepts Latin-1 text with occasional accented bytes', () => {
+  const text = Buffer.from('// configuracion del modulo principal\n'.repeat(20), 'latin1');
+  text[5] = 0xf3;
+  assert.equal(isBinary(text), false);
+});
+
+test('isBinary: multi-byte char split at the sample boundary is not binary', () => {
+  const buf = Buffer.from('a'.repeat(8191) + 'ñ');
+  assert.equal(isBinary(buf), false);
+});
+
 test('isBinary: returns false for empty buffer', () => {
   assert.equal(isBinary(Buffer.alloc(0)), false);
 });
