@@ -259,3 +259,15 @@ test('walkDirectory: .gitignore directory pattern prunes nested directories', ()
   assert.deepEqual(rel, ['.gitignore', 'a.ts', 'src/out/z.js']);
   cleanup(tmp);
 });
+
+test('walkDirectory: skips files with binary extensions without reading them', () => {
+  const tmp = makeTmp();
+  write(tmp, 'a.ts');
+  write(tmp, 'img/logo.PNG', 'not really a png');
+  write(tmp, 'doc.pdf', 'text');
+  write(tmp, 'icon.svg', '<svg/>');
+  const { included, skipped } = walkDirectory(makeConfig(tmp));
+  assert.deepEqual(included.map((p) => path.basename(p)), ['a.ts', 'icon.svg']);
+  assert.equal(skipped, 2);
+  cleanup(tmp);
+});

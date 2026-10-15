@@ -10,6 +10,8 @@ import { printWarning } from '../cli/reporter';
 import { ReposhotConfig, PackResult, PackedFile, SecretMatch } from '../types';
 
 const BINARY_CHECK_BYTES = 8192;
+// raw pixel or audio data often has no NUL bytes, but is mostly invalid UTF-8 or control chars
+const BINARY_SUSPICIOUS_RATIO = 0.1;
 // below this size the cost of spawning workers outweighs the parallel speedup
 const PARALLEL_TOKENIZE_MIN_CHARS = 2 * 1024 * 1024;
 const MAX_TOKEN_WORKERS = 8;
@@ -100,7 +102,19 @@ export function writeOutput(outputPath: string, content: string): void {
 
 export function isBinary(buffer: Buffer): boolean {
   const sample = buffer.subarray(0, BINARY_CHECK_BYTES);
-  return sample.includes(0);
+  if (sample.includes(0)) return true;
+  if (sample.length === 0) return false;
+
+  // stream mode keeps a multi-byte char cut off at the sample boundary from counting as invalid
+  const text = new TextDecoder('utf-8').decode(sample, { stream: true });
+  let suspicious = 0;
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i);
+    const isControl = code < 0x20 && code !== 0x09 && code !== 0x0a && code !== 0x0d
+      && code !== 0x0c && code !== 0x1b;
+    if (code === 0xfffd || isControl) suspicious++;
+  }
+  return suspicious / text.length > BINARY_SUSPICIOUS_RATIO;
 }
 
 const BLOCKED_OUTPUT_PATHS = [
