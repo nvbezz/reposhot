@@ -2,8 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { parseArgs as nodeParseArgs } from 'util';
 import { ReposhotConfig } from '../types';
-
-const VERSION = '1.1.1';
+import { VERSION } from './reporter';
 
 const HELP = `
 reposhot — pack a repository into a single XML file for AI consumption
@@ -22,6 +21,8 @@ Options:
   -v, --version             Show version
   -h, --help                Show this help message
 `.trim();
+
+const CONFIG_FILE = 'reposhot.config.json';
 
 interface ConfigFile {
   output?: string;
@@ -85,11 +86,65 @@ export function parseArgs(argv: string[], cwd: string = process.cwd()): Reposhot
   };
 }
 
+const STRING_ARRAY_KEYS = ['include', 'ignore'] as const;
+const BOOLEAN_KEYS = [
+  'respectGitignore',
+  'showLineNumbers',
+  'removeComments',
+  'checkSecrets',
+] as const;
+
 export function loadConfigFile(cwd: string): ConfigFile {
+  const configPath = path.join(cwd, CONFIG_FILE);
+  let raw: string;
   try {
-    const raw = fs.readFileSync(path.join(cwd, 'reposhot.config.json'), 'utf8');
-    return JSON.parse(raw) as ConfigFile;
+    raw = fs.readFileSync(configPath, 'utf8');
   } catch {
     return {};
   }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    throw new Error(`invalid JSON in ${CONFIG_FILE}: ${reason}`);
+  }
+  return validateConfigFile(parsed);
+}
+
+// a typo in the config file should fail loudly instead of silently changing what gets packed
+function validateConfigFile(value: unknown): ConfigFile {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    throw new Error(`${CONFIG_FILE} must contain a JSON object`);
+  }
+  const obj = value as Record<string, unknown>;
+  const config: ConfigFile = {};
+
+  if (obj.output !== undefined) {
+    if (typeof obj.output !== 'string' || obj.output.length === 0) {
+      throw new Error(`${CONFIG_FILE}: "output" must be a non-empty string`);
+    }
+    config.output = obj.output;
+  }
+
+  for (const key of STRING_ARRAY_KEYS) {
+    const v = obj[key];
+    if (v === undefined) continue;
+    if (!Array.isArray(v) || !v.every((item): item is string => typeof item === 'string')) {
+      throw new Error(`${CONFIG_FILE}: "${key}" must be an array of strings`);
+    }
+    config[key] = v;
+  }
+
+  for (const key of BOOLEAN_KEYS) {
+    const v = obj[key];
+    if (v === undefined) continue;
+    if (typeof v !== 'boolean') {
+      throw new Error(`${CONFIG_FILE}: "${key}" must be a boolean`);
+    }
+    config[key] = v;
+  }
+
+  return config;
 }
