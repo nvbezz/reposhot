@@ -1,6 +1,6 @@
 {
   "name": "reposhot",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "CLI that packs a local repository into a single XML file for AI consumption",
   "main": "dist/index.js",
   "bin": {
@@ -9,7 +9,7 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
-    "test": "tsc -p tsconfig.test.json && node --test .test-dist/test/gitignore.test.js .test-dist/test/walker.test.js .test-dist/test/xmlGenerator.test.js .test-dist/test/packer.test.js .test-dist/test/args.test.js .test-dist/test/reporter.test.js"
+    "test": "tsc -p tsconfig.test.json && node --test .test-dist/test/gitignore.test.js .test-dist/test/walker.test.js .test-dist/test/xmlGenerator.test.js .test-dist/test/packer.test.js .test-dist/test/args.test.js .test-dist/test/reporter.test.js .test-dist/test/secrets.test.js"
   },
   "files": ["dist"],
   "engines": { "node": ">=18" },
