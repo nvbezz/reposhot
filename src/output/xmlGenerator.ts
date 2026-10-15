@@ -19,7 +19,7 @@ export function generateXml(options: XmlGeneratorOptions): string {
 
   const fileEntries = files
     .map((f) => {
-      let content = removeComments ? stripComments(f.content) : f.content;
+      let content = removeComments ? stripComments(f.content, f.relPath) : f.content;
       if (showLineNumbers) content = addLineNumbers(content);
       return `<file path="${escapeAttr(f.relPath)}">\n${escapeXml(content)}\n</file>`;
     })
@@ -86,16 +86,19 @@ export function generateXml(options: XmlGeneratorOptions): string {
   ].join('\n');
 }
 
+const XML_ESCAPES: Record<string, string> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+};
+
 function escapeXml(str: string): string {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return /[&<>]/.test(str) ? str.replace(/[&<>]/g, (c) => XML_ESCAPES[c]) : str;
 }
 
 function escapeAttr(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+  return str.replace(/[&<>"]/g, (c) => XML_ESCAPES[c]);
 }
 
 function addLineNumbers(content: string): string {
@@ -104,17 +107,95 @@ function addLineNumbers(content: string): string {
   return lines.map((line, i) => `${String(i + 1).padStart(width, ' ')}  ${line}`).join('\n');
 }
 
-// Best-effort comment removal. Handles // and # line comments and /* */ blocks.
-// Not language-aware — inline comments inside strings may be incorrectly removed.
-function stripComments(content: string): string {
-  // Remove /* ... */ blocks first
-  const noBlock = content.replace(/\/\*[\s\S]*?\*\//g, '');
-  return noBlock
+const C_STYLE_EXTS = new Set([
+  'ts', 'tsx', 'mts', 'cts', 'js', 'jsx', 'mjs', 'cjs', 'java', 'kt', 'kts', 'scala', 'groovy',
+  'gradle', 'c', 'h', 'cc', 'cpp', 'cxx', 'hpp', 'cs', 'go', 'rs', 'swift', 'dart', 'php',
+  'css', 'scss', 'less', 'proto', 'sol', 'zig', 'vue', 'svelte',
+]);
+
+const HASH_STYLE_EXTS = new Set([
+  'py', 'pyi', 'rb', 'sh', 'bash', 'zsh', 'fish', 'pl', 'pm', 'r', 'ps1', 'yaml', 'yml',
+  'toml', 'cfg', 'conf', 'ini', 'properties', 'tf', 'cmake', 'nim', 'ex', 'exs', 'jl',
+]);
+
+const HASH_STYLE_NAMES = new Set(['dockerfile', 'makefile', 'gemfile', 'rakefile', '.gitignore']);
+
+// Best-effort and not a parser: only languages with a known comment syntax are touched,
+// so Markdown headings or C preprocessor lines are never mistaken for comments.
+function stripComments(content: string, relPath: string): string {
+  const name = relPath.slice(relPath.lastIndexOf('/') + 1).toLowerCase();
+  const dot = name.lastIndexOf('.');
+  const ext = dot >= 0 ? name.slice(dot + 1) : '';
+  if (C_STYLE_EXTS.has(ext)) return stripCStyleComments(content);
+  if (HASH_STYLE_EXTS.has(ext) || HASH_STYLE_NAMES.has(name)) return stripHashComments(content);
+  return content;
+}
+
+// Skips over string literals so that globs like 'src/**/*.ts' or URLs survive. Line comments
+// are only removed when they fill the whole line, because a `//` mid-line may sit inside a
+// regex literal that this scanner cannot recognise.
+function stripCStyleComments(content: string): string {
+  let out = '';
+  let i = 0;
+  let lineStart = true;
+  const len = content.length;
+
+  while (i < len) {
+    const ch = content[i];
+    const next = content[i + 1];
+
+    if (ch === '/' && next === '*') {
+      const end = content.indexOf('*/', i + 2);
+      i = end === -1 ? len : end + 2;
+      continue;
+    }
+
+    if (ch === '/' && next === '/' && lineStart) {
+      const end = content.indexOf('\n', i);
+      i = end === -1 ? len : end;
+      continue;
+    }
+
+    if (ch === '"' || ch === "'" || ch === '`') {
+      const end = findStringEnd(content, i);
+      out += content.slice(i, end);
+      i = end;
+      lineStart = false;
+      continue;
+    }
+
+    out += ch;
+    if (ch === '\n') lineStart = true;
+    else if (ch !== ' ' && ch !== '\t' && ch !== '\r') lineStart = false;
+    i++;
+  }
+  return out;
+}
+
+function findStringEnd(content: string, start: number): number {
+  const quote = content[start];
+  let i = start + 1;
+  while (i < content.length) {
+    const ch = content[i];
+    if (ch === '\\') {
+      i += 2;
+      continue;
+    }
+    if (ch === quote) return i + 1;
+    // plain quotes cannot span lines; stopping here limits damage from unrecognised syntax
+    if (ch === '\n' && quote !== '`') return i;
+    i++;
+  }
+  return content.length;
+}
+
+function stripHashComments(content: string): string {
+  return content
     .split('\n')
-    .map((line) => {
+    .map((line, i) => {
       const trimmed = line.trimStart();
-      if (trimmed.startsWith('//') || trimmed.startsWith('#')) return '';
-      return line;
+      if (!trimmed.startsWith('#')) return line;
+      return i === 0 && trimmed.startsWith('#!') ? line : '';
     })
     .join('\n');
 }

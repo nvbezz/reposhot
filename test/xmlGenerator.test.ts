@@ -182,3 +182,24 @@ test('generateXml: works with empty file content', () => {
   const files = [makeFile('empty.ts', '')];
   assert.doesNotThrow(() => generateXml(makeOptions({ files })));
 });
+
+test('generateXml: removeComments keeps glob strings intact', () => {
+  const files = [makeFile('a.ts', "const g = 'src/**/*.ts'; /* drop */\nconst u = \"http://x\";")];
+  const xml = generateXml(makeOptions({ files, removeComments: true }));
+  assert.ok(xml.includes("'src/**/*.ts'"));
+  assert.ok(xml.includes('http://x'));
+  assert.ok(!xml.includes('drop'));
+});
+
+test('generateXml: removeComments leaves markdown headings alone', () => {
+  const files = [makeFile('README.md', '# Title\ntext')];
+  const xml = generateXml(makeOptions({ files, removeComments: true }));
+  assert.ok(xml.includes('# Title'));
+});
+
+test('generateXml: removeComments keeps shebang line', () => {
+  const files = [makeFile('run.sh', '#!/bin/sh\n# zz-shell-remark\necho hi')];
+  const xml = generateXml(makeOptions({ files, removeComments: true }));
+  assert.ok(xml.includes('#!/bin/sh'));
+  assert.ok(!xml.includes('zz-shell-remark'));
+});

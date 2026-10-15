@@ -204,3 +204,58 @@ test('walkDirectory: skips files over 1MB', () => {
   assert.equal(skipped, 1);
   cleanup(tmp);
 });
+
+test('walkDirectory: excludes the output file itself', () => {
+  const tmp = makeTmp();
+  write(tmp, 'a.ts');
+  write(tmp, 'snapshot.xml', '<old/>');
+  const { included } = walkDirectory(makeConfig(tmp, { output: 'snapshot.xml' }));
+  assert.deepEqual(included.map((p) => path.basename(p)), ['a.ts']);
+  cleanup(tmp);
+});
+
+test('walkDirectory: does not loop on symlinks pointing to an ancestor', () => {
+  const tmp = makeTmp();
+  write(tmp, 'src/a.ts');
+  try {
+    fs.symlinkSync(tmp, path.join(tmp, 'src', 'loop'), 'dir');
+  } catch {
+    cleanup(tmp);
+    return;
+  }
+  const { included } = walkDirectory(makeConfig(tmp));
+  assert.equal(included.length, 1);
+  cleanup(tmp);
+});
+
+test('walkDirectory: skips symlinks that escape the root', () => {
+  const tmp = makeTmp();
+  const outside = makeTmp();
+  write(outside, 'secret.txt');
+  write(tmp, 'a.ts');
+  try {
+    fs.symlinkSync(path.join(outside, 'secret.txt'), path.join(tmp, 'link.txt'));
+  } catch {
+    cleanup(tmp);
+    cleanup(outside);
+    return;
+  }
+  const { included, skipped } = walkDirectory(makeConfig(tmp));
+  assert.deepEqual(included.map((p) => path.basename(p)), ['a.ts']);
+  assert.equal(skipped, 1);
+  cleanup(tmp);
+  cleanup(outside);
+});
+
+test('walkDirectory: .gitignore directory pattern prunes nested directories', () => {
+  const tmp = makeTmp();
+  write(tmp, '.gitignore', 'logs/\n/out\n');
+  write(tmp, 'a.ts');
+  write(tmp, 'pkg/logs/x.txt');
+  write(tmp, 'out/y.js');
+  write(tmp, 'src/out/z.js');
+  const { included } = walkDirectory(makeConfig(tmp, { respectGitignore: true }));
+  const rel = included.map((p) => path.relative(tmp, p).replace(/\\/g, '/'));
+  assert.deepEqual(rel, ['.gitignore', 'a.ts', 'src/out/z.js']);
+  cleanup(tmp);
+});

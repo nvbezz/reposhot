@@ -3,9 +3,10 @@ import * as fs from 'fs';
 import { parseArgs } from './args';
 import { runPack } from '../core/packer';
 import { printBanner, printSummary, printError } from './reporter';
+import { ReposhotConfig } from '../types';
 
 async function main(): Promise<void> {
-  let config;
+  let config: ReposhotConfig;
   try {
     config = parseArgs(process.argv.slice(2));
   } catch (err) {

@@ -55,3 +55,16 @@ test('detectSecrets: returns correct relPath in result', () => {
   assert.ok(result !== null);
   assert.equal(result.relPath, 'src/config/keys.ts');
 });
+
+test('detectSecrets: detects provider-specific tokens', () => {
+  const content = [
+    `const gh = 'ghp_${'a'.repeat(36)}';`,
+    `const slack = 'xoxb-1234567890-abcdef';`,
+    `const pem = '-----BEGIN ENCRYPTED PRIVATE KEY-----';`,
+  ].join('\n');
+  const result = detectSecrets('keys.ts', content);
+  assert.ok(result !== null);
+  for (const name of ['GITHUB_TOKEN', 'SLACK_TOKEN', 'PEM_KEY']) {
+    assert.ok(result.findings.includes(name), `Missing: ${name}`);
+  }
+});

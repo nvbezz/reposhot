@@ -119,3 +119,24 @@ test('ALWAYS_IGNORED: reposhot output files are matched', () => {
   assert.equal(matchesPattern('reposhot-output.xml', ALWAYS_IGNORED), true);
   assert.equal(matchesPattern('reposhot-output-2024.xml', ALWAYS_IGNORED), true);
 });
+
+test('matchesPattern: leading slash anchors pattern to the root', () => {
+  assert.equal(matchesPattern('out/index.js', ['/out']), true);
+  assert.equal(matchesPattern('src/out/index.js', ['/out']), false);
+});
+
+test('matchesPattern: trailing slash matches directories at any depth', () => {
+  assert.equal(matchesPattern('logs/a.txt', ['logs/']), true);
+  assert.equal(matchesPattern('pkg/logs/a.txt', ['logs/']), true);
+  assert.equal(matchesPattern('pkg/logs', ['logs/']), false);
+});
+
+test('matchesPattern: ignores negation patterns', () => {
+  assert.equal(matchesPattern('src/index.ts', ['!keep.ts']), false);
+});
+
+test('ALWAYS_IGNORED: env variants are ignored but templates are kept', () => {
+  assert.equal(matchesPattern('.env.local', ALWAYS_IGNORED), true);
+  assert.equal(matchesPattern('config/.env.production', ALWAYS_IGNORED), true);
+  assert.equal(matchesPattern('.env.example', ALWAYS_IGNORED), false);
+});
